@@ -1,6 +1,7 @@
 import ExcelJS from "exceljs";
 import { employees } from "@/lib/data/employees";
 import { customers } from "@/lib/data/customers";
+import { filterRows } from "@/lib/filter";
 
 export const runtime = "nodejs";
 
@@ -8,11 +9,18 @@ type Column = { header: string; key: string; width: number };
 
 const SHEETS: Record<
   string,
-  { sheet: string; file: string; columns: Column[]; rows: Record<string, unknown>[] }
+  {
+    sheet: string;
+    file: string;
+    columns: Column[];
+    rows: Record<string, unknown>[];
+    filterKeys: string[];
+  }
 > = {
   employees: {
     sheet: "사원목록",
     file: "cocoa_employees.xlsx",
+    filterKeys: ["department", "position", "status"],
     columns: [
       { header: "사번", key: "id", width: 12 },
       { header: "이름", key: "name", width: 12 },
@@ -28,6 +36,7 @@ const SHEETS: Record<
   customers: {
     sheet: "고객사목록",
     file: "cocoa_customers.xlsx",
+    filterKeys: ["industry", "contract", "region"],
     columns: [
       { header: "고객사코드", key: "id", width: 12 },
       { header: "회사명", key: "name", width: 24 },
@@ -44,17 +53,29 @@ const SHEETS: Record<
 };
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ type: string }> },
 ) {
   const { type } = await params;
   const def = SHEETS[type];
   if (!def) return new Response("Not Found", { status: 404 });
 
+  // 화면의 검색어·필터와 같은 조건(q, 필터 키)을 쿼리스트링으로 받아 적용한다.
+  const sp = new URL(request.url).searchParams;
+  const filters = Object.fromEntries(
+    def.filterKeys.map((k) => [k, sp.get(k) ?? ""]).filter(([, v]) => v),
+  );
+  const rows = filterRows(
+    def.rows,
+    sp.get("q") ?? "",
+    filters,
+    def.columns.map((c) => c.key),
+  );
+
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet(def.sheet);
   ws.columns = def.columns;
-  ws.addRows(def.rows);
+  ws.addRows(rows);
   ws.getRow(1).font = { bold: true };
   const buffer = await wb.xlsx.writeBuffer();
 

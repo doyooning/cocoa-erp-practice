@@ -9,6 +9,7 @@ export type Employee = {
   phone: string;
   hireDate: string;
   status: "재직" | "휴직";
+  memo?: string;
 };
 
 const SURNAMES = ["김", "이", "박", "최", "정", "강", "조", "윤", "장", "임", "한", "오", "서", "신", "권", "황", "안", "송", "류", "홍"];

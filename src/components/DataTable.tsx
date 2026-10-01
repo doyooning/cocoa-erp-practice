@@ -1,8 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { filterRows } from "@/lib/filter";
 
 export type Column<T> = { key: keyof T & string; header: string };
+
+export type FilterDef<T> = { key: keyof T & string; label: string; options: string[] };
 
 type Props<T> = {
   tableId: string;
@@ -11,6 +14,11 @@ type Props<T> = {
   pageSize?: number;
   exportHref?: string;
   searchPlaceholder?: string;
+  filters?: FilterDef<T>[];
+  rowKey?: (row: T) => string;
+  onRowClick?: (row: T) => void;
+  /** 이 컬럼의 값은 버튼으로 렌더링해 키보드로도 상세를 열 수 있게 한다. */
+  primaryKey?: keyof T & string;
 };
 
 export default function DataTable<T extends Record<string, unknown>>({
@@ -20,29 +28,53 @@ export default function DataTable<T extends Record<string, unknown>>({
   pageSize = 10,
   exportHref,
   searchPlaceholder = "검색어 입력",
+  filters = [],
+  rowKey,
+  onRowClick,
+  primaryKey,
 }: Props<T>) {
   const [query, setQuery] = useState("");
+  const [values, setValues] = useState<Record<string, string>>({});
   const [page, setPage] = useState(1);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter((r) =>
-      columns.some((c) => String(r[c.key]).toLowerCase().includes(q)),
-    );
-  }, [rows, columns, query]);
+  const activeFilters = useMemo(
+    () => Object.fromEntries(Object.entries(values).filter(([, v]) => v)),
+    [values],
+  );
+
+  const filtered = useMemo(
+    () =>
+      filterRows(
+        rows,
+        query,
+        activeFilters,
+        columns.map((c) => c.key),
+      ),
+    [rows, columns, query, activeFilters],
+  );
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const current = Math.min(page, totalPages);
   const start = (current - 1) * pageSize;
   const pageRows = filtered.slice(start, start + pageSize);
+  const hasFilter = query.trim() !== "" || Object.keys(activeFilters).length > 0;
+
+  // 엑셀 내보내기도 현재 검색·필터 결과와 같은 조건으로 내려받는다.
+  const exportUrl = useMemo(() => {
+    if (!exportHref) return "";
+    const p = new URLSearchParams(activeFilters);
+    if (query.trim()) p.set("q", query.trim());
+    const qs = p.toString();
+    return qs ? `${exportHref}?${qs}` : exportHref;
+  }, [exportHref, activeFilters, query]);
 
   const btn =
     "min-w-8 rounded border px-2 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-40";
+  const select = "rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm";
 
   return (
     <div>
-      <div className="mb-3 flex items-center justify-between gap-3">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
         <input
           id={`${tableId}-search`}
           name="search"
@@ -55,14 +87,50 @@ export default function DataTable<T extends Record<string, unknown>>({
           placeholder={searchPlaceholder}
           className="w-64 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
         />
-        <div className="flex items-center gap-3">
+        {filters.map((f) => (
+          <select
+            key={f.key}
+            id={`filter-${f.key}`}
+            name={f.key}
+            aria-label={f.label}
+            value={values[f.key] ?? ""}
+            onChange={(e) => {
+              setValues((v) => ({ ...v, [f.key]: e.target.value }));
+              setPage(1);
+            }}
+            className={select}
+          >
+            <option value="">{f.label} 전체</option>
+            {f.options.map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
+            ))}
+          </select>
+        ))}
+        {filters.length > 0 && (
+          <button
+            id="btn-filter-reset"
+            type="button"
+            disabled={!hasFilter}
+            onClick={() => {
+              setQuery("");
+              setValues({});
+              setPage(1);
+            }}
+            className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50 disabled:opacity-40"
+          >
+            초기화
+          </button>
+        )}
+        <div className="ml-auto flex items-center gap-3">
           <span id={`${tableId}-total`} className="text-sm text-zinc-600">
             총 {filtered.length}건
           </span>
           {exportHref && (
             <a
               id="btn-export-excel"
-              href={exportHref}
+              href={exportUrl}
               download
               className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
             >
@@ -84,15 +152,31 @@ export default function DataTable<T extends Record<string, unknown>>({
             </tr>
           </thead>
           <tbody>
-            {pageRows.map((r, i) => (
-              <tr key={start + i} className="border-t border-zinc-100 hover:bg-cocoa-50/50">
-                {columns.map((c) => (
-                  <td key={c.key} className="whitespace-nowrap px-3 py-2">
-                    {String(r[c.key])}
-                  </td>
-                ))}
-              </tr>
-            ))}
+            {pageRows.map((r, i) => {
+              const key = rowKey ? rowKey(r) : String(start + i);
+              return (
+                <tr
+                  key={key}
+                  id={rowKey ? `row-${key}` : undefined}
+                  onClick={onRowClick ? () => onRowClick(r) : undefined}
+                  className={`border-t border-zinc-100 hover:bg-cocoa-50/50 ${
+                    onRowClick ? "cursor-pointer" : ""
+                  }`}
+                >
+                  {columns.map((c) => (
+                    <td key={c.key} className="whitespace-nowrap px-3 py-2">
+                      {c.key === primaryKey ? (
+                        <button type="button" className="font-medium text-cocoa-600 hover:underline">
+                          {String(r[c.key])}
+                        </button>
+                      ) : (
+                        String(r[c.key])
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
             {pageRows.length === 0 && (
               <tr>
                 <td colSpan={columns.length} className="px-3 py-8 text-center text-zinc-500">
