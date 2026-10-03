@@ -3,9 +3,12 @@
 import { useMemo, useState } from "react";
 import { filterRows } from "@/lib/filter";
 
-export type Column<T> = { key: keyof T & string; header: string };
+export type Column<T> = { key: keyof T & string; header: string; className?: string };
 
 export type FilterDef<T> = { key: keyof T & string; label: string; options: string[] };
+
+/** 날짜 컬럼(yyyy-MM-dd)을 날짜 입력으로 걸러낸다. */
+export type DateFilterDef<T> = { key: keyof T & string; label: string };
 
 type Props<T> = {
   tableId: string;
@@ -15,6 +18,7 @@ type Props<T> = {
   exportHref?: string;
   searchPlaceholder?: string;
   filters?: FilterDef<T>[];
+  dateFilters?: DateFilterDef<T>[];
   rowKey?: (row: T) => string;
   onRowClick?: (row: T) => void;
   /** 이 컬럼의 값은 버튼으로 렌더링해 키보드로도 상세를 열 수 있게 한다. */
@@ -29,6 +33,7 @@ export default function DataTable<T extends Record<string, unknown>>({
   exportHref,
   searchPlaceholder = "검색어 입력",
   filters = [],
+  dateFilters = [],
   rowKey,
   onRowClick,
   primaryKey,
@@ -87,6 +92,21 @@ export default function DataTable<T extends Record<string, unknown>>({
           placeholder={searchPlaceholder}
           className="w-64 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
         />
+        {dateFilters.map((f) => (
+          <input
+            key={f.key}
+            id={`filter-${f.key}`}
+            name={f.key}
+            type="date"
+            aria-label={f.label}
+            value={values[f.key] ?? ""}
+            onChange={(e) => {
+              setValues((v) => ({ ...v, [f.key]: e.target.value }));
+              setPage(1);
+            }}
+            className={select}
+          />
+        ))}
         {filters.map((f) => (
           <select
             key={f.key}
@@ -108,7 +128,7 @@ export default function DataTable<T extends Record<string, unknown>>({
             ))}
           </select>
         ))}
-        {filters.length > 0 && (
+        {filters.length + dateFilters.length > 0 && (
           <button
             id="btn-filter-reset"
             type="button"
@@ -164,7 +184,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                   }`}
                 >
                   {columns.map((c) => (
-                    <td key={c.key} className="whitespace-nowrap px-3 py-2">
+                    <td key={c.key} className={`px-3 py-2 ${c.className ?? "whitespace-nowrap"}`}>
                       {c.key === primaryKey ? (
                         <button type="button" className="font-medium text-cocoa-600 hover:underline">
                           {String(r[c.key])}

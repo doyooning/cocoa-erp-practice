@@ -9,6 +9,7 @@ const MENUS = [
   { href: "/employees", label: "사원관리", id: "menu-employees" },
   { href: "/customers", label: "고객사관리", id: "menu-customers" },
   { href: "/attendance", label: "근태/휴가", id: "menu-attendance" },
+  { href: "/overtime", label: "초과 승인", id: "menu-overtime" },
   { href: "/approvals", label: "결재", id: "menu-approvals" },
   { href: "/notices", label: "공지사항", id: "menu-notices" },
 ];

@@ -4,14 +4,21 @@ import { employees, DEPARTMENTS } from "@/lib/data/employees";
 import { customers } from "@/lib/data/customers";
 import { initialApprovals } from "@/lib/data/approvals";
 import { notices } from "@/lib/data/notices";
+import { buildOvertimeRequests } from "@/lib/data/overtime";
+
+// 초과 신청 데이터가 오늘 기준으로 생성되므로 빌드 시점에 고정하지 않는다.
+export const dynamic = "force-dynamic";
 
 export default function DashboardPage() {
+  const overtimeRequests = buildOvertimeRequests();
   const pending = initialApprovals.filter((a) => a.status === "대기").length;
   const onLeave = employees.filter((e) => e.status === "휴직").length;
+  const otPending = overtimeRequests.filter((o) => o.status === "승인대기").length;
   const kpis = [
     { id: "kpi-employees", label: "전체 사원", value: employees.length, unit: "명" },
     { id: "kpi-customers", label: "고객사", value: customers.length, unit: "곳" },
     { id: "kpi-pending", label: "결재 대기", value: pending, unit: "건" },
+    { id: "kpi-overtime", label: "초과 승인대기", value: otPending, unit: "건" },
     { id: "kpi-leave", label: "휴직자", value: onLeave, unit: "명" },
   ];
   const byDept = DEPARTMENTS.map((d) => ({
@@ -25,7 +32,7 @@ export default function DashboardPage() {
       <NoticeModal />
       <h1 className="mb-6 text-2xl font-bold text-cocoa-900">대시보드</h1>
 
-      <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-5">
         {kpis.map((k) => (
           <div key={k.id} className="rounded-xl border border-zinc-200 bg-white p-5">
             <div className="text-sm text-zinc-500">{k.label}</div>
