@@ -21,10 +21,10 @@ npm run build && npm start
 | `/dashboard` | KPI·부서별 인원·최근 공지 + **시스템 점검 안내 모달** | 모달이 있을 때만 닫기(조건 분기) |
 | `/employees` | 사원 100명, 10건씩 페이지네이션, 검색, **부서·직급·상태 필터**, **엑셀로 다운로드**, 행 클릭 시 **상세 모달** | 표 추출, 페이지 반복, 필터 선택, 파일 다운로드, 모달 입력 |
 | `/customers` | 고객사 30곳, 검색, **업종·계약상태·지역 필터**, 엑셀 다운로드, 행 클릭 시 **상세 모달** | 표 추출 → Excel 저장, 필터 후 추출 |
-| `/attendance` | 휴가 신청 폼 + 내역 표 | 폼 입력(select/date/text) 반복 |
+| `/attendance` | 휴가 신청 45건 조회·승인. **신청자 검색 + 휴가유형·상태·시작일 필터**, 상세 모달에서 승인/반려. 신청 폼은 기본으로 접혀 있음 | 조건 조회 후 대기 건만 반복 처리, (접힌)폼 입력 |
 | `/overtime` | 초과 업무 승인. 최근 평일 7일치 신청 80여 건, **일자·상태·업무구분 필터**, 엑셀 다운로드, 행 클릭 시 **상세 모달에서만 승인/반려** | 날짜 입력 필터, 대기 건만 골라 반복 처리, 반려 사유 입력 |
 | `/approvals` | 결재 40건, 상태 필터, 승인/반려 버튼 | 조건부 클릭, 상태 변경 |
-| `/notices` | 공지 12건 + 상세 | 목록→상세 스크래핑 |
+| `/notices` | 공지 12건 + 상세. **'🚨 중요' 공지는 최상단 고정** | 목록→상세 스크래핑, 중요 공지만 추출 |
 
 ### 점검 안내 모달
 - 로그인 직후 대시보드에서 표시 (`#notice-modal`)
@@ -33,7 +33,7 @@ npm run build && npm start
 - '확인'은 해당 로그인 세션 동안만 닫습니다.
 
 ### 필터와 엑셀 다운로드
-- 필터는 `#filter-department` `#filter-position` `#filter-status`(사원), `#filter-industry` `#filter-contract` `#filter-region`(고객사), `#filter-date`(날짜 입력) `#filter-status` `#filter-category`(초과 승인) 이며, `#btn-filter-reset`으로 검색어까지 초기화합니다.
+- 필터는 `#filter-department` `#filter-position` `#filter-status`(사원), `#filter-industry` `#filter-contract` `#filter-region`(고객사), `#filter-date`(날짜 입력) `#filter-status` `#filter-category`(초과 승인), `#filter-from`(날짜 입력) `#filter-type` `#filter-status`(휴가) 이며, `#btn-filter-reset`으로 검색어까지 초기화합니다.
 - '엑셀로 다운로드'는 **현재 검색·필터 결과만** 내려받습니다(쿼리스트링으로 같은 조건을 서버에 전달). 필터를 걸지 않으면 전체가 내려갑니다.
 - 다운로드 파일은 서버의 원본 데이터 기준이라, 상세 모달에서 수정한 값은 반영되지 않습니다.
 
@@ -52,8 +52,17 @@ npm run build && npm start
 
 닫기: `#btn-detail-close`, 우상단 ×, ESC, 바깥 영역 클릭. 연차·거래 내역 등은 ID로 시드를 만든 가상 데이터라 항상 같은 값이 나옵니다.
 
+### 휴가 승인 모달 (`#leave-modal`)
+- 승인대기(`신청`) 건에서만 `#btn-leave-approve` / `#btn-leave-reject`가 보이고, **반려는 `#leave-note`에 사유 입력이 필수**입니다(`#leave-detail-error`). 결과는 `#leave-detail-message`.
+- 신청 데이터는 **오늘 기준 과거 20일 ~ 향후 20일**로 매일 다시 생성됩니다.
+
+### 휴가 대리 신청 폼 (자동화 전용)
+관리자 화면에서는 신청 폼을 쓰지 않으므로 기본으로 접혀 있습니다. `#btn-leave-form-toggle`을 클릭하면 펼쳐지고,
+**`#leave-form` · `#leave-employee` · `#leave-type` · `#leave-from` · `#leave-to` · `#leave-reason` · `#btn-leave-submit` · `#leave-message` id는 그대로**라 기존 자동화는 토글 클릭 한 단계만 추가하면 됩니다.
+
 ### 상태가 유지되는 범위
-휴가 신청·결재 승인/반려·상세 모달에서의 수정은 브라우저 메모리에만 반영되므로 **새로고침하면 초기 상태로 돌아갑니다**. 실습을 반복하기 좋게 한 설계입니다.
+휴가·결재·초과 승인 처리와 상세 모달에서의 수정은 브라우저 메모리에만 반영되므로 **새로고침하면 초기 상태로 돌아갑니다**.
+각 화면의 **`#btn-reset-leaves` / `#btn-reset-approvals` / `#btn-reset-overtime`(처리 상태 초기화)** 버튼으로도 되돌릴 수 있습니다. 실습을 반복하기 좋게 한 설계입니다.
 
 ### 셀렉터 팁
 주요 요소에 고정 `id`가 있습니다: `#username`, `#password`, `#btn-login`, `#btn-logout`, `#menu-*`, `#employee-table`, `#customer-table`, `#btn-export-excel`, `#btn-prev`, `#btn-next`, `#page-N`, `#leave-*`, `#approve-<문서번호>`, `#reject-<문서번호>` 등.

@@ -50,10 +50,23 @@ export default function OvertimeTable({ initialRows }: { initialRows: Overtime[]
 
   return (
     <>
-      <p className="mb-3 text-sm text-zinc-600">
-        승인대기 <b id="overtime-pending" className="text-cocoa-700">{pending}</b>건 / 전체{" "}
-        <b id="overtime-count">{rows.length}</b>건
-      </p>
+      <div className="mb-3 flex items-center gap-3">
+        <p className="text-sm text-zinc-600">
+          승인대기 <b id="overtime-pending" className="text-cocoa-700">{pending}</b>건 / 전체{" "}
+          <b id="overtime-count">{rows.length}</b>건
+        </p>
+        <button
+          id="btn-reset-overtime"
+          type="button"
+          className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50"
+          onClick={() => {
+            setRows(initialRows);
+            setSelectedId(null);
+          }}
+        >
+          처리 상태 초기화
+        </button>
+      </div>
       <DataTable
         tableId="overtime-table"
         columns={columns}

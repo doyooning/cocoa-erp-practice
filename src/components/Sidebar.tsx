@@ -30,11 +30,12 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="flex w-56 shrink-0 flex-col bg-cocoa-900 text-cocoa-100">
+    // 목록이 긴 화면에서도 하단의 로그아웃이 보이도록 사이드바를 화면에 고정한다.
+    <aside className="sticky top-0 flex h-screen w-56 shrink-0 flex-col self-start bg-cocoa-900 text-cocoa-100">
       <div className="px-5 py-5 text-xl font-bold tracking-tight text-white">
         ☕ 코코아 ERP
       </div>
-      <nav className="flex-1 space-y-1 px-3">
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3">
         {MENUS.map((m) => {
           const active = pathname.startsWith(m.href);
           return (

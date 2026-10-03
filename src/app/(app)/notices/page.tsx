@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notices } from "@/lib/data/notices";
+import ImportantBadge from "@/components/ImportantBadge";
 
 export default function NoticesPage() {
   return (
@@ -17,10 +18,17 @@ export default function NoticesPage() {
           </thead>
           <tbody>
             {notices.map((n) => (
-              <tr key={n.id} className="border-t border-zinc-100 hover:bg-cocoa-50/50">
+              <tr
+                key={n.id}
+                id={`notice-row-${n.id}`}
+                className={`border-t border-zinc-100 hover:bg-cocoa-50/50 ${
+                  n.important ? "bg-red-50/60" : ""
+                }`}
+              >
                 <td className="px-3 py-2">{n.id}</td>
                 <td className="px-3 py-2">
-                  <Link href={`/notices/${n.id}`} className="hover:underline">
+                  {n.important && <ImportantBadge />}
+                  <Link href={`/notices/${n.id}`} className="align-middle hover:underline">
                     {n.title}
                   </Link>
                 </td>

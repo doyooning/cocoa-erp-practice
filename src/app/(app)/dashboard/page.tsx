@@ -1,5 +1,6 @@
 import Link from "next/link";
 import NoticeModal from "@/components/NoticeModal";
+import ImportantBadge from "@/components/ImportantBadge";
 import { employees, DEPARTMENTS } from "@/lib/data/employees";
 import { customers } from "@/lib/data/customers";
 import { initialApprovals } from "@/lib/data/approvals";
@@ -74,6 +75,7 @@ export default function DashboardPage() {
             {notices.slice(0, 5).map((n) => (
               <li key={n.id} className="flex justify-between py-2">
                 <Link href={`/notices/${n.id}`} className="hover:underline">
+                  {n.important && <ImportantBadge />}
                   {n.title}
                 </Link>
                 <span className="text-zinc-500">{n.date}</span>

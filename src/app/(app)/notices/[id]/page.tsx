@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { notices } from "@/lib/data/notices";
+import ImportantBadge from "@/components/ImportantBadge";
 
 export default async function NoticeDetailPage({
   params,
@@ -14,6 +15,7 @@ export default async function NoticeDetailPage({
   return (
     <article className="max-w-3xl rounded-xl border border-zinc-200 bg-white p-6">
       <h1 id="notice-title" className="text-xl font-bold text-cocoa-900">
+        {notice.important && <ImportantBadge />}
         {notice.title}
       </h1>
       <div className="mt-2 flex gap-4 text-sm text-zinc-500">

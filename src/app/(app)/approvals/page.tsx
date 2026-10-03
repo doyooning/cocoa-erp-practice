@@ -44,9 +44,19 @@ export default function ApprovalsPage() {
             </button>
           ))}
         </div>
-        <span id="approval-total" className="text-sm text-zinc-600">
-          총 {shown.length}건
-        </span>
+        <div className="flex items-center gap-3">
+          <span id="approval-total" className="text-sm text-zinc-600">
+            총 {shown.length}건
+          </span>
+          <button
+            id="btn-reset-approvals"
+            type="button"
+            onClick={() => setItems(initialApprovals)}
+            className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50"
+          >
+            처리 상태 초기화
+          </button>
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white">
