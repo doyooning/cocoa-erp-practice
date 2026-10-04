@@ -3,7 +3,6 @@
 import { useState } from "react";
 import DataTable, { type Column } from "@/components/DataTable";
 import Modal, { InfoGrid, Section, btnGhost, btnPrimary, inputCls } from "@/components/Modal";
-import { employees } from "@/lib/data/employees";
 import { LEAVE_STATUSES, LEAVE_TYPES, type Leave, type LeaveStatus } from "@/lib/data/leaves";
 
 const columns: Column<Leave>[] = [
@@ -73,12 +72,6 @@ export default function LeaveTable({ initialRows }: { initialRows: Leave[] }) {
         rowKey={(r) => String(r.no)}
         primaryKey="employee"
         onRowClick={(r) => setSelectedNo(r.no)}
-      />
-
-      <LeaveRequestForm
-        onAdd={(leave) => {
-          setRows((prev) => [{ ...leave, no: Math.max(0, ...prev.map((p) => p.no)) + 1 }, ...prev]);
-        }}
       />
 
       {selected && (
@@ -206,157 +199,5 @@ function LeaveModal({
         )}
       </Section>
     </Modal>
-  );
-}
-
-/**
- * 관리자 화면에서는 기본으로 접혀 있다.
- * 자동화로 신청 데이터를 만들 때 쓰려고 폼 자체와 요소 id는 그대로 남겨 둔다.
- */
-function LeaveRequestForm({ onAdd }: { onAdd: (leave: Omit<Leave, "no">) => void }) {
-  const [open, setOpen] = useState(false);
-  const [message, setMessage] = useState("");
-  const [form, setForm] = useState({
-    employee: employees[0].name,
-    type: LEAVE_TYPES[0],
-    from: "",
-    to: "",
-    reason: "",
-  });
-
-  function set(name: string, value: string) {
-    setForm((f) => ({ ...f, [name]: value }));
-  }
-
-  function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (form.to < form.from) {
-      setMessage("종료일은 시작일 이후여야 합니다.");
-      return;
-    }
-    const days =
-      form.type === "반차"
-        ? 0.5
-        : Math.round((Date.parse(form.to) - Date.parse(form.from)) / 86400000) + 1;
-    onAdd({
-      employee: form.employee,
-      department: employees.find((e) => e.name === form.employee)?.department ?? "",
-      type: form.type,
-      from: form.from,
-      to: form.to,
-      days,
-      reason: form.reason,
-      status: "신청",
-      note: "",
-    });
-    setMessage(`휴가 신청이 완료되었습니다. (${form.employee}, ${form.from} ~ ${form.to})`);
-    setForm((f) => ({ ...f, from: "", to: "", reason: "" }));
-  }
-
-  const field = "mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm";
-
-  return (
-    <div className="mt-8">
-      <button
-        id="btn-leave-form-toggle"
-        type="button"
-        aria-expanded={open}
-        aria-controls="leave-form"
-        onClick={() => setOpen((v) => !v)}
-        className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-500 hover:bg-zinc-50"
-      >
-        {open ? "▴ 휴가 대리 신청 닫기" : "▾ 휴가 대리 신청 (자동화 전용)"}
-      </button>
-
-      {open && (
-        <form
-          id="leave-form"
-          onSubmit={submit}
-          className="mt-3 grid gap-4 rounded-xl border border-zinc-200 bg-white p-5 md:grid-cols-3"
-        >
-          <label className="text-sm font-medium text-zinc-700">
-            신청자
-            <select
-              id="leave-employee"
-              name="employee"
-              value={form.employee}
-              onChange={(e) => set("employee", e.target.value)}
-              className={field}
-            >
-              {employees.map((e) => (
-                <option key={e.id} value={e.name}>
-                  {e.name} ({e.department})
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-sm font-medium text-zinc-700">
-            휴가유형
-            <select
-              id="leave-type"
-              name="type"
-              value={form.type}
-              onChange={(e) => set("type", e.target.value)}
-              className={field}
-            >
-              {LEAVE_TYPES.map((t) => (
-                <option key={t}>{t}</option>
-              ))}
-            </select>
-          </label>
-          <div className="hidden md:block" />
-          <label className="text-sm font-medium text-zinc-700">
-            시작일
-            <input
-              id="leave-from"
-              name="from"
-              type="date"
-              required
-              value={form.from}
-              onChange={(e) => set("from", e.target.value)}
-              className={field}
-            />
-          </label>
-          <label className="text-sm font-medium text-zinc-700">
-            종료일
-            <input
-              id="leave-to"
-              name="to"
-              type="date"
-              required
-              value={form.to}
-              onChange={(e) => set("to", e.target.value)}
-              className={field}
-            />
-          </label>
-          <label className="text-sm font-medium text-zinc-700">
-            사유
-            <input
-              id="leave-reason"
-              name="reason"
-              type="text"
-              required
-              value={form.reason}
-              onChange={(e) => set("reason", e.target.value)}
-              className={field}
-            />
-          </label>
-          <div className="flex items-center gap-4 md:col-span-3">
-            <button
-              id="btn-leave-submit"
-              type="submit"
-              className="rounded-md bg-cocoa-600 px-5 py-2 text-sm font-medium text-white hover:bg-cocoa-700"
-            >
-              휴가 신청
-            </button>
-            {message && (
-              <span id="leave-message" role="status" className="text-sm text-emerald-700">
-                {message}
-              </span>
-            )}
-          </div>
-        </form>
-      )}
-    </div>
   );
 }
