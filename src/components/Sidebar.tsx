@@ -12,6 +12,7 @@ const MENUS = [
   { href: "/overtime", label: "초과 승인", id: "menu-overtime" },
   { href: "/approvals", label: "결재", id: "menu-approvals" },
   { href: "/notices", label: "공지사항", id: "menu-notices" },
+  { href: "/requests", label: "요청사항", id: "menu-requests" },
 ];
 
 export default function Sidebar() {

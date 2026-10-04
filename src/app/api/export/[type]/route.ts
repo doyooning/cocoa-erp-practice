@@ -2,6 +2,7 @@ import ExcelJS from "exceljs";
 import { employees } from "@/lib/data/employees";
 import { customers } from "@/lib/data/customers";
 import { buildOvertimeRequests } from "@/lib/data/overtime";
+import { buildRequests } from "@/lib/data/requests";
 import { filterRows } from "@/lib/filter";
 
 export const runtime = "nodejs";
@@ -71,6 +72,23 @@ const SHEETS: Record<
       { header: "비고", key: "note", width: 36 },
     ],
     rows: () => buildOvertimeRequests(),
+  },
+  requests: {
+    sheet: "요청사항",
+    file: "cocoa_requests.xlsx",
+    filterKeys: ["department", "status"],
+    columns: [
+      { header: "번호", key: "id", width: 16 },
+      { header: "부서", key: "department", width: 14 },
+      { header: "작성자", key: "employee", width: 12 },
+      { header: "작성시간", key: "createdAt", width: 16 },
+      { header: "제목", key: "title", width: 28 },
+      { header: "내용", key: "content", width: 70 },
+      { header: "상태", key: "status", width: 10 },
+      { header: "답글", key: "reply", width: 50 },
+      { header: "답변시간", key: "repliedAt", width: 16 },
+    ],
+    rows: () => buildRequests(),
   },
 };
 

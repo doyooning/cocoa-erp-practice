@@ -25,6 +25,7 @@ npm run build && npm start
 | `/overtime` | 초과 업무 승인. 최근 평일 7일치 신청 80여 건, **일자·상태·업무구분 필터**, 엑셀 다운로드, 행 클릭 시 **상세 모달에서만 승인/반려** | 날짜 입력 필터, 대기 건만 골라 반복 처리, 반려 사유 입력 |
 | `/approvals` | 결재 40건, 상태 필터, 승인/반려 버튼 | 조건부 클릭, 상태 변경 |
 | `/notices` | 공지 12건 + 상세. **'🚨 중요' 공지는 최상단 고정** | 목록→상세 스크래핑, 중요 공지만 추출 |
+| `/requests` | 직원이 올린 요청 게시물 30건. 부서·상태 필터, 엑셀 다운로드, 게시물 클릭 시 **상세 모달에서 답글 작성** | 본문 스크래핑 → AI 분류/요약, 조건별 분기 처리 |
 
 ### 점검 안내 모달
 - 로그인 직후 대시보드에서 표시 (`#notice-modal`)
@@ -56,13 +57,20 @@ npm run build && npm start
 - 승인대기(`신청`) 건에서만 `#btn-leave-approve` / `#btn-leave-reject`가 보이고, **반려는 `#leave-note`에 사유 입력이 필수**입니다(`#leave-detail-error`). 결과는 `#leave-detail-message`.
 - 신청 데이터는 **오늘 기준 과거 20일 ~ 향후 20일**로 매일 다시 생성됩니다.
 
+### 요청사항 모달 (`#request-modal`)
+- 작성자(`#request-detail-employee`)·부서(`#request-detail-department`)·작성시간(`#request-detail-time`, `YY.MM.dd hh:mm`)과 본문(`#request-detail-content`)을 보여줍니다.
+- `#reply-text`에 답글을 쓰고 `#btn-reply-submit`으로 등록하면 상태가 `답변완료`로 바뀝니다. 비어 있으면 `#reply-error`, 성공하면 `#reply-message`.
+- 이미 답글이 있으면 `#request-detail-reply`에 표시되고 버튼이 '답글 수정'이 됩니다.
+- **요청의 긴급/일반 구분은 사이트에 없습니다.** 본문을 읽고 판단하는 것이 자동화 실습의 목적이라, 데이터에는 즉시 대응이 필요한 건과 일상적인 건을 섞어 두었습니다.
+- 작성 시간은 **지금 기준 최근 10일**로 매번 다시 생성됩니다.
+
 ### 상태가 유지되는 범위
 휴가·결재·초과 승인 처리와 상세 모달에서의 수정은 브라우저 메모리에만 반영되므로 **새로고침하면 초기 상태로 돌아갑니다**.
-각 화면의 **`#btn-reset-leaves` / `#btn-reset-approvals` / `#btn-reset-overtime`(처리 상태 초기화)** 버튼으로도 되돌릴 수 있습니다. 실습을 반복하기 좋게 한 설계입니다.
+각 화면의 **`#btn-reset-leaves` / `#btn-reset-approvals` / `#btn-reset-overtime` / `#btn-reset-requests`(처리 상태 초기화)** 버튼으로도 되돌릴 수 있습니다. 실습을 반복하기 좋게 한 설계입니다.
 
 ### 셀렉터 팁
 주요 요소에 고정 `id`가 있습니다: `#username`, `#password`, `#btn-login`, `#btn-logout`, `#menu-*`, `#employee-table`, `#customer-table`, `#btn-export-excel`, `#btn-prev`, `#btn-next`, `#page-N`, `#leave-*`, `#approve-<문서번호>`, `#reject-<문서번호>` 등.
-엑셀 다운로드 파일명: `cocoa_employees.xlsx`, `cocoa_customers.xlsx`, `cocoa_overtime.xlsx`.
+엑셀 다운로드 파일명: `cocoa_employees.xlsx`, `cocoa_customers.xlsx`, `cocoa_overtime.xlsx`, `cocoa_requests.xlsx`.
 
 ## 추가로 해볼 만한 UiPath 실습
 
@@ -72,9 +80,10 @@ npm run build && npm start
 4. **다운로드 파일 처리** — '엑셀로 다운로드' 클릭 → 다운로드 폴더 대기 → 이동/이름 변경 → Excel 읽기
 5. **결재 자동 처리** — 금액 기준 등 규칙으로 대기 건 자동 승인/반려
 6. **초과 승인 일괄 처리** — 날짜·상태 필터로 승인대기 건만 추린 뒤, 상세 모달을 열어 규칙(업무구분·시간 등)에 따라 승인하거나 사유를 적어 반려
-7. **공지 스크래핑 → 메일/메신저 요약 발송**
-8. **Orchestrator Queue 연계** — Dispatcher가 결재 대기건을 큐에 적재, Performer가 처리 (REFramework 간소화)
-9. **데이터 검증** — 웹 표와 다운로드 엑셀의 건수/값 일치 비교(테스트 자동화)
+7. **요청사항 AI 분류·분기 처리** — 게시물 본문을 읽어 LLM으로 `긴급`/`일반` 판정 → 일반은 요약해 엑셀로 정리, 긴급은 관리자에게 메일 발송(+ 모달에서 답글 등록)
+8. **공지 스크래핑 → 메일/메신저 요약 발송**
+9. **Orchestrator Queue 연계** — Dispatcher가 결재 대기건을 큐에 적재, Performer가 처리 (REFramework 간소화)
+10. **데이터 검증** — 웹 표와 다운로드 엑셀의 건수/값 일치 비교(테스트 자동화)
 
 ## Vercel 배포
 
