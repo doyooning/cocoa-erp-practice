@@ -6,7 +6,9 @@ import Modal, { InfoGrid, Section, btnGhost, btnPrimary, inputCls } from "@/comp
 import { customers as seed, CONTRACTS, INDUSTRY, type Customer } from "@/lib/data/customers";
 import { customerExtras, type Note } from "@/lib/data/details";
 
-type Row = Customer & { notes: Note[] };
+// 계약 정보(기간·연 계약금·결제조건)는 상세 모달에서 수정할 수 있어 행 상태로 들고 있는다.
+type ContractInfo = { contractStart: string; contractEnd: string; annualAmount: number; terms: string };
+type Row = Customer & ContractInfo & { notes: Note[] };
 
 const columns: Column<Row>[] = [
   { key: "id", header: "고객사코드" },
@@ -43,7 +45,10 @@ const today = () => {
 export default function CustomerTable() {
   // 수정 내용은 새로고침하면 초기화된다(실습 반복용).
   const [rows, setRows] = useState<Row[]>(() =>
-    seed.map((c) => ({ ...c, notes: customerExtras(c).notes })),
+    seed.map((c) => {
+      const x = customerExtras(c);
+      return { ...c, notes: x.notes, contractStart: x.contractStart, contractEnd: x.contractEnd, annualAmount: x.annualAmount, terms: x.terms };
+    }),
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = rows.find((r) => r.id === selectedId) ?? null;
@@ -89,6 +94,12 @@ function CustomerModal({
   const extras = customerExtras(c);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState({ manager: c.manager, phone: c.phone, email: c.email });
+  const [contractEditing, setContractEditing] = useState(false);
+  const contractOf = (r: Row): ContractInfo => ({
+    contractStart: r.contractStart, contractEnd: r.contractEnd, annualAmount: r.annualAmount, terms: r.terms,
+  });
+  const [contractDraft, setContractDraft] = useState<ContractInfo>(contractOf(c));
+  const [contractError, setContractError] = useState("");
   const [noteText, setNoteText] = useState("");
   const [message, setMessage] = useState("");
 
@@ -221,13 +232,120 @@ function CustomerModal({
       </Section>
 
       <Section title="계약 정보">
-        <InfoGrid
-          items={[
-            { label: "계약기간", value: `${extras.contractStart} ~ ${extras.contractEnd}`, id: "detail-period" },
-            { label: "연 계약금", value: won(extras.annualAmount), id: "detail-annual" },
-            { label: "결제조건", value: extras.terms, id: "detail-terms" },
-          ]}
-        />
+        {contractEditing ? (
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <label className="font-medium text-zinc-700">
+              계약 시작일
+              <input
+                id="edit-contract-start"
+                name="contractStart"
+                placeholder="YYYY-MM-DD"
+                className={inputCls}
+                value={contractDraft.contractStart}
+                onChange={(ev) => setContractDraft({ ...contractDraft, contractStart: ev.target.value })}
+              />
+            </label>
+            <label className="font-medium text-zinc-700">
+              계약 종료일
+              <input
+                id="edit-contract-end"
+                name="contractEnd"
+                placeholder="YYYY-MM-DD"
+                className={inputCls}
+                value={contractDraft.contractEnd}
+                onChange={(ev) => setContractDraft({ ...contractDraft, contractEnd: ev.target.value })}
+              />
+            </label>
+            <label className="font-medium text-zinc-700">
+              연 계약금(원)
+              <input
+                id="edit-annual"
+                name="annualAmount"
+                inputMode="numeric"
+                className={inputCls}
+                value={String(contractDraft.annualAmount)}
+                onChange={(ev) => setContractDraft({ ...contractDraft, annualAmount: Number(ev.target.value.replace(/[^0-9]/g, "")) })}
+              />
+            </label>
+            <label className="font-medium text-zinc-700">
+              결제조건
+              <input
+                id="edit-terms"
+                name="terms"
+                className={inputCls}
+                value={contractDraft.terms}
+                onChange={(ev) => setContractDraft({ ...contractDraft, terms: ev.target.value })}
+              />
+            </label>
+            {contractError && (
+              <p id="contract-error" role="alert" className="col-span-2 text-sm text-red-600">
+                {contractError}
+              </p>
+            )}
+            <div className="col-span-2 flex justify-end gap-2">
+              <button
+                id="btn-contract-cancel"
+                type="button"
+                className={btnGhost}
+                onClick={() => {
+                  setContractDraft(contractOf(c));
+                  setContractError("");
+                  setContractEditing(false);
+                }}
+              >
+                취소
+              </button>
+              <button
+                id="btn-contract-save"
+                type="button"
+                className={btnPrimary}
+                onClick={() => {
+                  const d = contractDraft;
+                  const ymd = /^\d{4}-\d{2}-\d{2}$/;
+                  if (!ymd.test(d.contractStart) || !ymd.test(d.contractEnd)) {
+                    setContractError("날짜는 YYYY-MM-DD 형식으로 입력하세요.");
+                    return;
+                  }
+                  if (d.contractEnd < d.contractStart) {
+                    setContractError("계약 종료일은 시작일 이후여야 합니다.");
+                    return;
+                  }
+                  if (!d.annualAmount || !d.terms.trim()) {
+                    setContractError("연 계약금과 결제조건을 입력하세요.");
+                    return;
+                  }
+                  onUpdate({ ...d, terms: d.terms.trim() });
+                  setContractError("");
+                  setContractEditing(false);
+                  setMessage("계약 정보가 수정되었습니다.");
+                }}
+              >
+                저장
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <InfoGrid
+              items={[
+                { label: "계약기간", value: `${c.contractStart} ~ ${c.contractEnd}`, id: "detail-period" },
+                { label: "연 계약금", value: won(c.annualAmount), id: "detail-annual" },
+                { label: "결제조건", value: c.terms, id: "detail-terms" },
+              ]}
+            />
+            <button
+              id="btn-contract-edit"
+              type="button"
+              className={`${btnGhost} mt-3`}
+              onClick={() => {
+                setContractDraft(contractOf(c));
+                setContractEditing(true);
+              }}
+            >
+              계약 정보 수정
+            </button>
+          </>
+        )}
         <label className="mt-3 flex items-center gap-3 text-sm font-medium text-zinc-700">
           계약상태 변경
           <select

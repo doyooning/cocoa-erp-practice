@@ -42,7 +42,7 @@ npm run build && npm start
 | 구분 | 볼 수 있는 정보 | 가능한 기능 |
 |---|---|---|
 | 사원 | 기본정보, 근속연수, 연차 현황(총/사용/잔여), 최근 휴가 이력 3건 | 재직↔휴직 전환(`#btn-toggle-status`), 정보 수정(부서·직급·이메일·연락처, `#btn-edit`), 인사 메모 저장(`#detail-memo`) |
-| 고객사 | 기본정보, 담당자, 계약기간·연 계약금·결제조건, 최근 거래 4건과 누적 거래액, 상담 메모 | 계약상태 변경(`#detail-contract-select`), 담당자 정보 수정(`#btn-edit`), 상담 메모 등록(`#note-text`, `#btn-note-add`) |
+| 고객사 | 기본정보, 담당자, 계약기간·연 계약금·결제조건, 최근 거래 4건과 누적 거래액, 상담 메모 | 계약상태 변경(`#detail-contract-select`), 담당자 정보 수정(`#btn-edit`), **계약 정보 수정**(`#btn-contract-edit`), 상담 메모 등록(`#note-text`, `#btn-note-add`) |
 
 ### 초과 승인 모달 (`#overtime-modal`)
 - 신청 정보(일자·신청자·부서·업무구분·고객사·시간), 업무 내용, 비고를 보여줍니다.
@@ -50,6 +50,12 @@ npm run build && npm start
 - **반려는 `#ot-note`에 사유를 입력해야** 가능하며, 비어 있으면 `#ot-error`에 오류가 뜹니다. 처리 결과는 `#ot-message`로 확인합니다.
 - 업무구분: 고객대응·개발·본사업무·운영·마케팅·기타 / 상태: 승인대기·승인완료·반려. 고객사는 '계약중'인 등록 고객사만 들어갑니다.
 - 신청 데이터는 **오늘 기준 최근 평일 7일**로 매일 다시 생성되며, 최근 2일치는 모두 승인대기입니다.
+
+### 계약 정보 수정 (고객사 상세 모달)
+- `#btn-contract-edit`를 누르면 `#edit-contract-start` `#edit-contract-end`(텍스트, `YYYY-MM-DD`) `#edit-annual`(숫자만 남김, 쉼표 입력 가능) `#edit-terms`가 나타납니다.
+- `#btn-contract-save` 저장 / `#btn-contract-cancel` 취소. 날짜 형식이 틀리거나 종료일이 시작일보다 앞서면, 또는 금액·결제조건이 비면 `#contract-error`에 오류가 뜹니다. 성공하면 `#detail-message`에 "계약 정보가 수정되었습니다."
+- 저장 후 `#detail-period`(`시작일 ~ 종료일`) `#detail-annual` `#detail-terms`에 반영됩니다. 다른 수정처럼 새로고침하면 초기화됩니다.
+- 문서(계약서) 추출 결과를 ERP에 반영하는 IXP·Maestro 실습([uipath-ixp-maestro](../uipath-ixp-maestro))에서 사용합니다.
 
 닫기: `#btn-detail-close`, 우상단 ×, ESC, 바깥 영역 클릭. 연차·거래 내역 등은 ID로 시드를 만든 가상 데이터라 항상 같은 값이 나옵니다.
 
